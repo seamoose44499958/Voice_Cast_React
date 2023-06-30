@@ -1,10 +1,39 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useDebugValue, useState } from 'react';
+import { StyleSheet, Text, View, Dimensions, Button, TouchableOpacity, TextInput} from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
+
+const {height} = Dimensions.get('window');
 
 export default function App() {
+
+  const [wifi_ssid, setWifiSSID] = useState(""); 
+  const [wifi_password, setWifiPassword] = useState("");
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
+    <View style={styles.container} >
+      <View style={styles.qr_codes}>
+
+        <Text style={{fontSize: 20}}>Hotspot</Text>
+        <QRCode  size={200} value={`WIFI:S:${wifi_ssid};T:WPA;P:${wifi_password};H:false;`}/>
+        <TextInput style={{fontSize: 18}}
+          onChangeText={setWifiSSID}
+          placeholder='Wifi SSID'
+        />
+        <TextInput style={[{marginBottom: 20, fontSize: 18}]}
+          onChangeText={setWifiPassword}
+          placeholder='Wifi Password'
+        />
+
+        <Text style={{fontSize: 20}}>URL</Text>
+        <QRCode  size={200} value="http://localhost:8080/"/>
+
+        
+      </View>
+
+      <TouchableOpacity style={styles.mic_button}> 
+        <Text style={{fontSize: height / 12}}>🎙</Text>
+      </TouchableOpacity>
       <StatusBar style="auto" />
     </View>
   );
@@ -12,9 +41,28 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'center',
   },
+
+  qr_codes: {
+    position: 'absolute',
+    top: (height / 15),
+    alignItems: 'center',
+  },
+
+  mic_button: {
+    position: 'absolute',
+    top: (height * (5 / 6)),
+    backgroundColor: 'deepskyblue',
+    width: (height / 6),
+    height: (height / 6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 1000,
+  },
+
+  wifi_input : {
+
+  }
 });
