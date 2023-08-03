@@ -3,21 +3,37 @@ import { useDebugValue, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Dimensions, Button, TouchableOpacity, TextInput} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as HTTP from './HTTPServer'
+import * as Mic from './Microphone.js'
 
 const {height} = Dimensions.get('window');
 
 export default function App() {
   const [wifi_ssid, setWifiSSID] = useState(""); 
   const [wifi_password, setWifiPassword] = useState("");
-  const [http_url, setHTTPUrl] = useState("Please wait to scan qr code");
+  const [http_url, setHTTPUrl] = useState("Please wait to scan url qr code");
+  const [mic_button_color, setMicColorButton] = useState("deepskyblue");
+
+  const toggleMicButton = () => {
+    if(mic_button_color === "deepskyblue") {
+      setMicColorButton("lightcoral");
+      Mic.startMic();
+    }
+    else {
+      setMicColorButton("deepskyblue");
+      Mic.stopMic();
+    }
+  };
 
   useEffect(()  => {
       HTTP.startServer().then((ip) => {
         setHTTPUrl(`http://${ip}:8080/`);
       });
+      
+      Mic.initializeMic();
 
     return () => {
       HTTP.stopServer();
+      Mic.closeMic();
     }  
   },[]);
 
@@ -42,10 +58,10 @@ export default function App() {
         
       </View>
 
-      <TouchableOpacity style={styles.mic_button}> 
+      <TouchableOpacity style={[styles.mic_button, {backgroundColor: mic_button_color}]} onPress={toggleMicButton}> 
         <Text style={{fontSize: height / 12}}>🎙</Text>
       </TouchableOpacity>
-      <StatusBar style="auto" />
+      <StatusBar style="auto"/>
     </View>
   );
 }
@@ -65,15 +81,10 @@ const styles = StyleSheet.create({
   mic_button: {
     position: 'absolute',
     top: (height * (5 / 6)),
-    backgroundColor: 'deepskyblue',
     width: (height / 6),
     height: (height / 6),
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 1000,
   },
-
-  wifi_input : {
-
-  }
 });

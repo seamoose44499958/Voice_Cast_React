@@ -1,7 +1,7 @@
 import TcpSocket from 'react-native-tcp-socket';
 import {NetworkInfo} from 'react-native-network-info';
-import { getFile } from './FileHandler';
-
+import { getFile } from './FileHandler.js';
+import {createMicListener, readMic, validMicID} from './Microphone'
 
 const server = TcpSocket.createServer(function(socket) {
     socket.setEncoding("utf-8");
@@ -42,8 +42,7 @@ export async function startServer() {
 export function stopServer() {
     if(server) {
         server.close();
-    }
-    
+    }   
 } 
 
 function parseHTTPRequest(data) {
@@ -97,14 +96,49 @@ function handleHTTPRequest(request) {
     }
     
     if(request.method === "GET") {
-        let [file_found ,file_data, file_size] = getFile(request.path);
+        let [file_found , file_data, file_size, file_type] = getFile(request.path);
 
         if(file_found) {
             response.version = "HTTP/1.1";
             response.status_code = "200";
             response.reason_phrase = "OK";
             response.headers.set("Content-Length", file_size);
+            response.headers.set("Content-Type", file_type);
             response.body = file_data;
+        }
+        else if(request.path === "/audio") {
+            let id = request.headers.get("X-Audio-ID");
+            if(id && validMicID(id)) {
+                let buffer = readMic(id);
+                response.version = "HTTP/1.1";
+                response.status_code = "200";
+                response.reason_phrase = "OK";
+                response.headers.set("Content-Length", buffer.length);
+                response.body = buffer;
+            }
+            else {
+                response.version = "HTTP/1.1";
+                response.status_code = "400";
+                response.reason_phrase = "Bad Request";
+                response.headers.set("Content-Length","0");
+                response.headers.set("Connection","close");
+            }
+        } 
+        else {
+            response.version = "HTTP/1.1";
+            response.status_code = "404";
+            response.reason_phrase = "Not Found";
+            response.headers.set("Content-Length", 0);
+        }  
+    }
+    else if(request.method === "POST") {
+        if(request.path === "/initialize_audio") {
+            id = createMicListener();
+            response.version = "HTTP/1.1";
+            response.status_code = "201";
+            response.reason_phrase = "Created"
+            response.headers.set("X-Audio-ID", id);
+            response.headers.set("Content-Length", 0);
         }
         else {
             response.version = "HTTP/1.1";
@@ -138,7 +172,7 @@ function handleHTTPRequest(request) {
     }
     
 
-    console.log("Response:\n" + response.toString());
+    //console.log("Response:\n" + response.toString());
     return response;
 }
 

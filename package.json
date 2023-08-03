@@ -14,10 +14,13 @@
     "expo-status-bar": "~1.4.4",
     "react": "18.2.0",
     "react-native": "0.71.8",
+    "react-native-microphone-stream": "^1.0.3",
     "react-native-network-info": "^5.2.1",
+    "react-native-permissions": "^3.8.4",
     "react-native-qrcode-svg": "^6.2.0",
     "react-native-svg": "13.4.0",
-    "react-native-tcp-socket": "^6.0.6"
+    "react-native-tcp-socket": "^6.0.6",
+    "text-encoding-utf-8": "^1.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
