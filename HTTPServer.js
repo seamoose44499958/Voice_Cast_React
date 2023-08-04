@@ -7,7 +7,7 @@ const server = TcpSocket.createServer(function(socket) {
     socket.setEncoding("utf-8");
 
     socket.on('data', (data) => {
-        console.log("Data:\n" + data);
+        //console.log("Data:\n" + data);
 
         const request = parseHTTPRequest(data);
         const response = handleHTTPRequest(request);

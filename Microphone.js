@@ -17,8 +17,8 @@ const listener = MicStream.addListener(data => {
 
     write_index = (write_index + 1) % mic_buffer_size;
     for(let i = 0; i < read_indexes.length; i++) {
-        if(write_index === read_indexes[i][0]) {
-            read_indexes[i][1] = true;
+        if(write_index === read_indexes[i]) {
+            read_indexes[i] = (read_indexes[i] + 1) % mic_buffer.length;
         }
     }
 });
@@ -66,39 +66,38 @@ export function closeMic() {
 }
 
 export function createMicListener() {
-    read_indexes.push([write_index, false]);
+    read_indexes.push(write_index);
     return read_indexes.length - 1;
 }
 
-export function validMicID(listener_index) {
+export function validMicID(audio_id) {
     console.log(read_indexes.length);
-    return listener_index >= 0 && listener_index < read_indexes.length;
+    return audio_id >= 0 && audio_id < read_indexes.length;
 }   
 
-export function readMic(listener_index) {
+export function readMic(audio_id) {
     let return_buffer = "";
     
-    console.log(`Pre:\nReader index: ${read_indexes[listener_index][0]} -> ${read_indexes[listener_index][1]}\nWrite index: ${write_index}`);
-
-    if(read_indexes[listener_index][1]) {
-        console.log("Possible error as it jumped the if ------------------------||||||||||||||||")
-        for(let i = write_index;i < mic_buffer_size;i++) {
-            return_buffer += mic_buffer[i];  
-        }
-        read_indexes[listener_index][0] = 0;
+    if(read_indexes[audio_id] !== write_index) {
+        let buffer = mic_buffer[read_indexes[audio_id]];
+        const in_ramp = generateLinearRamp(0, buffer[0], 7);
+        const out_ramp = generateLinearRamp(buffer[buffer.length - 1], 0, 7);
+        return_buffer = in_ramp + "," + buffer + "," + out_ramp;
+        read_indexes[audio_id] = (read_indexes[audio_id] + 1) % mic_buffer.length;
     }
-
-    for(;read_indexes[listener_index][0] < write_index; read_indexes[listener_index][0]++) {
-        return_buffer += mic_buffer[read_indexes[listener_index][0]] + "0,";
-    }
-    return_buffer += "0";
-
-    read_indexes[listener_index][1] = false;
-
-
-    console.log(`Post:\nReader index: ${read_indexes[listener_index][0]} -> ${read_indexes[listener_index][1]}\nWrite index: ${write_index}`);
 
     return return_buffer;
+}
+
+function generateLinearRamp(start, end, num_samples) {
+    let ramp = [];
+    let slope = (end - start) / (num_samples);
+
+    for(let i = 0;i < num_samples;i++) {
+        ramp.push(i * slope + start);
+    }
+
+    return ramp;
 }
 
 

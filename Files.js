@@ -24,7 +24,7 @@ export const voice_html_type = "text/html";
 
 export const main_js = 
 `
-    const circular_buffer = new Array(100);
+    const circular_buffer = new Array(20);
     let read_index = 0;
     let write_index = 0;
 
