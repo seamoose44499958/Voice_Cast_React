@@ -1,41 +1,27 @@
 import TcpSocket from 'react-native-tcp-socket';
 import {NetworkInfo} from 'react-native-network-info';
 import { getFile } from './FileHandler.js';
-import {createMicListener, readMic, validMicID} from './Microphone'
+import {createMicListener, readMic, validMicID} from './Microphone.js'
+
+/*
+    HTTP 1.1 Server written from scratch using a tcp socket
+*/
 
 const server = TcpSocket.createServer(function(socket) {
     socket.setEncoding("utf-8");
 
     socket.on('data', (data) => {
-        //console.log("Data:\n" + data);
 
         const request = parseHTTPRequest(data);
         const response = handleHTTPRequest(request);
         
         socket.write(response.toString());
     });
-
-    socket.on('error', (error) => {
-        console.log('An error ocurred with client socket ', error);
-    });
-
-    socket.on('close', (error) => {
-        console.log('Closed connection with ', socket.address());
-    });
-});
-
-server.on('error', (error) => {
-    console.log('An error ocurred with the server', error);
-});
-
-server.on('close', () => {
-    console.log('Server closed connection');
 });
 
 export async function startServer() {
     const ip = await NetworkInfo.getIPV4Address();
     server.listen({ port: 8080, host: ip });
-    console.log(`Ip Address ${ip}:8080`);
     return ip;
 }  
 
@@ -45,6 +31,10 @@ export function stopServer() {
     }   
 } 
 
+/* 
+    Will attempt to parse the headers and the body
+    Returns an HTTP Response
+*/
 function parseHTTPRequest(data) {
     const request = new HTTPRequest();
 
@@ -58,7 +48,7 @@ function parseHTTPRequest(data) {
         request.version = first_line[2].trim();
 
         let i = 1;
-
+        //Gets all headers
         while(i < temp.length && temp[i].trim() !== "") {
             const colon_index = temp[i].indexOf(":");
             request.headers.set(temp[i].slice(0, colon_index).trim(), temp[i].slice(colon_index + 1).trim());
@@ -66,7 +56,7 @@ function parseHTTPRequest(data) {
         }
 
         i++;
-
+        //Gets body
         while(i < temp.length - 1) {
             request.body += temp[i] + "\n";
             i++;
@@ -77,13 +67,16 @@ function parseHTTPRequest(data) {
         }
 
     } catch(err) {
-        console.log(err);
         request.error = true;
     }
 
     return request;
 }
 
+/*
+    Handles all possible requests client can make
+    Returns an HTTP Response
+*/
 function handleHTTPRequest(request) {
     const response = new HTTPResponse();
     if(request.error) {
@@ -98,6 +91,7 @@ function handleHTTPRequest(request) {
     if(request.method === "GET") {
         let [file_found , file_data, file_size, file_type] = getFile(request.path);
 
+        //Used to provide index.html and main.js
         if(file_found) {
             response.version = "HTTP/1.1";
             response.status_code = "200";
@@ -106,6 +100,7 @@ function handleHTTPRequest(request) {
             response.headers.set("Content-Type", file_type);
             response.body = file_data;
         }
+        //Sends an audio chunk given they have an audio id
         else if(request.path === "/audio") {
             let id = request.headers.get("X-Audio-ID");
             if(id && validMicID(id)) {
@@ -147,6 +142,7 @@ function handleHTTPRequest(request) {
             response.headers.set("Content-Length", 0);
         }  
     }
+    //Written under the requirements from the specification
     else if(request.method === "HEAD") {
         let [file_found ,file_data, file_size] = getFile(request.path);
 
@@ -171,8 +167,6 @@ function handleHTTPRequest(request) {
         response.headers.set("Connection", "close");
     }
     
-
-    //console.log("Response:\n" + response.toString());
     return response;
 }
 
